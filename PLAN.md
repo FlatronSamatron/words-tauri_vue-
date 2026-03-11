@@ -276,7 +276,7 @@ gameStore.nextWord() // не должен падать — currentWord = null
 ## Блок 4 — UI: вкладка Settings
 
 ### Задачи
-- [ ] 🤖 Создать `src/views/SettingsView.vue`:
+- [x] 🤖 Создать `src/views/SettingsView.vue`:
   - Числовой инпут «Интервал напоминания (минут)» — мин. 1, макс. 60
   - Тоггл направления:
     - `native_to_foreign` → «Родной → Иностранный»
@@ -284,7 +284,7 @@ gameStore.nextWord() // не должен падать — currentWord = null
   - Кнопка «Сохранить» с индикатором успеха
   - Загрузка текущих значений при монтировании
 
-- [ ] 🤖 Обновить `src/views/MainWindow.vue`:
+- [x] 🤖 Обновить `src/views/MainWindow.vue`:
   - Две вкладки: Words / Settings
   - Активная вкладка подсвечена
   - Переключение без потери состояния (keep-alive)
