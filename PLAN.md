@@ -475,6 +475,151 @@ gameStore.nextWord() // не должен падать — currentWord = null
 
 ---
 
+## Блок 9 — Группы слов
+
+> Слова привязываются к группе. В настройках можно выбрать конкретную группу или «All» (все слова). Игра использует только слова выбранной группы.
+
+### Задачи
+
+#### 9.1 — База данных: миграция v2
+
+- [ ] 🤖 Добавить **Migration v2** в `db.rs`:
+
+```sql
+-- Таблица групп
+CREATE TABLE IF NOT EXISTS groups (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL UNIQUE,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
+-- Группа по умолчанию
+INSERT OR IGNORE INTO groups (id, name) VALUES (1, 'Default');
+
+-- Добавить столбец group_id к words
+ALTER TABLE words ADD COLUMN group_id INTEGER DEFAULT 1 REFERENCES groups(id) ON DELETE CASCADE;
+
+-- Настройка активной группы (null = All)
+INSERT OR IGNORE INTO settings VALUES ('active_group_id', 'all');
+```
+
+> Все существующие слова автоматически попадают в группу «Default» (через `DEFAULT 1`).
+
+---
+
+#### 9.2 — Rust Backend: команды для групп
+
+- [ ] 🤖 Добавить структуру `Group` в `commands.rs`:
+
+```rust
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Group {
+    pub id: i64,
+    pub name: String,
+    pub created_at: String,
+    pub word_count: i64,
+}
+```
+
+- [ ] 🤖 Добавить новые команды:
+
+| Команда | Параметры | Описание |
+|---------|-----------|----------|
+| `get_groups` | — | Список всех групп с количеством слов |
+| `add_group` | `name: String` | Создать группу |
+| `rename_group` | `id: i64, name: String` | Переименовать группу |
+| `delete_group` | `id: i64` | Удалить группу (CASCADE — слова удаляются) |
+
+- [ ] 🤖 Обновить существующие команды:
+
+| Команда | Изменение |
+|---------|-----------|
+| `Word` struct | + `group_id: i64` |
+| `Settings` struct | + `active_group_id: String` (`"all"` или числовой ID) |
+| `add_word` | + параметр `group_id: i64` |
+| `get_words` | + `group_id` в SELECT |
+| `get_settings` / `save_settings` | + чтение/запись `active_group_id` |
+
+- [ ] 🤖 Зарегистрировать новые команды в `lib.rs` → `invoke_handler`
+
+---
+
+#### 9.3 — Frontend: типы и stores
+
+- [ ] 🤖 Обновить `src/types/index.ts`:
+
+```typescript
+export interface Group {
+  id: number
+  name: string
+  created_at: string
+  word_count: number
+}
+
+// Word → + group_id: number
+// Settings → + active_group_id: string  // "all" | "<number>"
+```
+
+- [ ] 🤖 Создать `src/stores/groups.ts`:
+  - `groups: Group[]`
+  - `fetchGroups()` — загрузить список
+  - `addGroup(name)` — создать
+  - `renameGroup(id, name)` — переименовать
+  - `deleteGroup(id)` — удалить
+
+- [ ] 🤖 Обновить `src/stores/words.ts`:
+  - `addWord()` — + параметр `groupId: number`
+  - `mapWord()` — маппить `group_id`
+
+- [ ] 🤖 Обновить `src/stores/settings.ts`:
+  - Добавить `active_group_id` в default state, `fetchSettings`, `saveSettings`
+
+- [ ] 🤖 Обновить `src/stores/game.ts`:
+  - `nextWord()` — фильтровать слова по `settingsStore.settings.active_group_id` (если не `"all"`)
+
+---
+
+#### 9.4 — Frontend: UI
+
+- [ ] 🤖 `SettingsView.vue` — новая секция **«Active Group»**:
+  - Dropdown: `All` + список групп из `groupsStore`
+  - Блок «Manage Groups» с CRUD: создание, переименование, удаление групп
+
+- [ ] 🤖 `WordForm.vue` — dropdown-селектор группы:
+  - Значение по умолчанию = текущая активная группа из настроек
+
+- [ ] 🤖 `WordsTable.vue` — столбец «Group» в таблице
+
+- [ ] 🤖 `WordsView.vue` — фильтр по группам:
+  - Chip-selector вверху: `All | Group1 | Group2 | ...`
+  - Quick Stats считать по текущему фильтру
+
+- [ ] 🤖 `GameView.vue`:
+  - Показывать название активной группы мелким текстом
+  - Адаптировать empty state: «No words in this group» vs «No words at all»
+
+---
+
+### 🧪 Тесты блока 9
+```
+Ручное тестирование:
+
+[ ] Миграция: при запуске создаётся группа «Default», все слова привязаны к ней
+[ ] Создать новую группу в настройках
+[ ] Добавить слово в новую группу
+[ ] Переключить активную группу → слова фильтруются в таблице и в игре
+[ ] Выбрать «All» → все слова видны
+[ ] Удалить группу → слова удалены вместе с ней
+[ ] Игра корректно показывает слова только из выбранной группы
+[ ] Игра: пустая группа → сообщение «No words in this group»
+[ ] Quick Stats пересчитываются при смене фильтра группы
+[ ] Группу «Default» нельзя удалить (но можно переименовать)
+```
+
+**✅ Блок 9 завершён если:** группы работают end-to-end, фильтрация корректна в таблице и в игре.
+
+---
+
 ## Зависимости (Cargo.toml)
 
 ```toml
