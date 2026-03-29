@@ -6,6 +6,7 @@
           <tr>
             <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Word</th>
             <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Translation</th>
+            <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Group</th>
             <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Correct / Total</th>
             <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors" @click="toggleSort">
               <div class="flex items-center gap-1">
@@ -32,6 +33,9 @@
               </td>
               <td class="px-6 py-4 cursor-pointer" @click="startEdit(item)">
                 <div class="text-sm text-gray-600">{{ item.translate }}</div>
+              </td>
+              <td class="px-6 py-4 cursor-pointer" @click="startEdit(item)">
+                <div class="text-sm text-gray-500 italic">{{ getGroupName(item.group_id) }}</div>
               </td>
               <td class="px-6 py-4">
                 <div class="text-sm text-gray-500 font-mono">{{ item.correct }} / {{ item.total }}</div>
@@ -84,6 +88,16 @@
                   @keyup.esc="cancelEdit"
                 />
               </td>
+              <td class="px-4 py-2 w-[15%]">
+                <select 
+                  v-model="editForm.groupId"
+                  class="w-full px-2 py-1.5 text-sm border-2 border-indigo-200 bg-indigo-50/30 rounded-md focus:outline-none focus:border-indigo-500 focus:ring-0"
+                >
+                  <option v-for="group in groupsStore.groups" :key="group.id" :value="group.id">
+                    {{ group.name }}
+                  </option>
+                </select>
+              </td>
               <td class="px-6 py-4">
                 <div class="text-sm text-gray-500 font-mono">{{ item.correct }} / {{ item.total }}</div>
               </td>
@@ -116,9 +130,9 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
           </svg>
         </div>
-        <h3 class="text-xl font-bold text-gray-800 mb-2 tracking-tight">Your vocabulary is empty</h3>
+        <h3 class="text-xl font-bold text-gray-800 mb-2 tracking-tight">No words found</h3>
         <p class="text-md text-gray-500 max-w-sm mb-6">
-          Add your first word using the form on the left to start learning!
+          Add new words or change the group filter to start learning!
         </p>
       </div>
     </div>
@@ -128,20 +142,32 @@
 <script setup lang="ts">
 import { ref, computed, nextTick } from 'vue'
 import { useWordsStore } from '../stores/words'
+import { useGroupsStore } from '../stores/groups'
 import type { Word } from '../types'
 
+const props = defineProps<{
+  words: Word[]
+}>()
+
 const wordsStore = useWordsStore()
+const groupsStore = useGroupsStore()
 
 // State
 const editingId = ref<number | null>(null)
-const editForm = ref({ word: '', translate: '' })
+const editForm = ref({ word: '', translate: '', groupId: 1 })
 const sortAsc = ref<boolean | null>(true)
 const editWordInput = ref<HTMLInputElement[]>([])
 const deletingId = ref<number | null>(null)
 
+// Helpers
+const getGroupName = (groupId: number) => {
+  const group = groupsStore.groups.find(g => g.id === groupId)
+  return group ? group.name : 'Unknown'
+}
+
 // Sorting logic
 const sortedWords = computed(() => {
-  const words = [...wordsStore.words]
+  const words = [...props.words]
   if (sortAsc.value === true) {
     return words.sort((a, b) => {
       if (a.total === 0 && b.total !== 0) return -1
@@ -171,7 +197,11 @@ const getPercentageBadgeClass = (percentage: number, total: number) => {
 // Editing logic
 const startEdit = async (item: Word) => {
   editingId.value = item.id
-  editForm.value = { word: item.word, translate: item.translate }
+  editForm.value = { 
+    word: item.word, 
+    translate: item.translate, 
+    groupId: item.group_id 
+  }
   
   await nextTick()
   if (editWordInput.value && editWordInput.value.length > 0) {
@@ -181,7 +211,7 @@ const startEdit = async (item: Word) => {
 
 const cancelEdit = () => {
   editingId.value = null
-  editForm.value = { word: '', translate: '' }
+  editForm.value = { word: '', translate: '', groupId: 1 }
 }
 
 const saveEdit = async () => {
@@ -189,11 +219,12 @@ const saveEdit = async () => {
   
   const word = editForm.value.word.trim()
   const translate = editForm.value.translate.trim()
+  const groupId = editForm.value.groupId
   
   if (!word || !translate) return
   
   try {
-    await wordsStore.updateWord(editingId.value, word, translate)
+    await wordsStore.updateWord(editingId.value, word, translate, groupId)
     cancelEdit()
   } catch (error) {
     console.error('Failed to update word:', error)

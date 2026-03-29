@@ -66,6 +66,113 @@
             </label>
           </div>
         </div>
+
+        <hr class="border-gray-100" />
+
+        <!-- Active Group Setting -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-800 mb-2">
+            Active Study Group
+          </label>
+          <p class="text-xs text-gray-500 mb-3">Only words from this group will be shown in the learning popup.</p>
+          <select 
+            v-model="form.active_group_id"
+            class="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white text-gray-900 transition-colors"
+          >
+            <option value="all">All Groups</option>
+            <option v-for="group in groupsStore.groups" :key="group.id" :value="group.id.toString()">
+              {{ group.name }} ({{ group.word_count }} words)
+            </option>
+          </select>
+        </div>
+
+        <hr class="border-gray-100" />
+
+        <!-- Manage Groups Section -->
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <label class="block text-sm font-semibold text-gray-800">
+              Manage Groups
+            </label>
+            <button 
+              @click="showAddGroup = !showAddGroup"
+              class="text-xs font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+              </svg>
+              Create New Group
+            </button>
+          </div>
+
+          <!-- Add Group Form -->
+          <transition name="fade">
+            <div v-if="showAddGroup" class="mb-4 p-3 bg-indigo-50 rounded-lg border border-indigo-100 flex gap-2">
+              <input 
+                v-model="newGroupName" 
+                type="text" 
+                placeholder="Group name..." 
+                class="flex-1 px-3 py-1.5 text-sm rounded-md border border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                @keyup.enter="handleAddGroup"
+              />
+              <button 
+                @click="handleAddGroup"
+                :disabled="!newGroupName.trim()"
+                class="bg-indigo-600 text-white text-xs font-bold px-3 py-1.5 rounded-md hover:bg-indigo-700 disabled:opacity-50"
+              >
+                Add
+              </button>
+            </div>
+          </transition>
+
+          <!-- Groups List -->
+          <div class="space-y-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
+            <div 
+              v-for="group in groupsStore.groups" 
+              :key="group.id"
+              class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100 group"
+            >
+              <div v-if="editingGroupId === group.id" class="flex-1 flex gap-2">
+                <input 
+                  v-model="editGroupName" 
+                  type="text" 
+                  class="flex-1 px-2 py-1 text-sm rounded border border-indigo-300 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  @keyup.enter="handleRenameGroup(group.id)"
+                  @keyup.esc="editingGroupId = null"
+                  ref="editGroupInput"
+                />
+                <button @click="handleRenameGroup(group.id)" class="text-indigo-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+              <div v-else class="flex-1 flex items-center justify-between">
+                <div>
+                  <span class="text-sm font-medium text-gray-800">{{ group.name }}</span>
+                  <span class="ml-2 text-xs text-gray-400">{{ group.word_count }} words</span>
+                </div>
+                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button @click="startRename(group)" class="p-1 text-gray-400 hover:text-indigo-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                  </button>
+                  <button 
+                    v-if="group.id !== 1" 
+                    @click="handleDeleteGroup(group.id)" 
+                    class="p-1 text-gray-400 hover:text-red-600"
+                    title="Delete group and its words"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       
       <!-- Footer actions -->
@@ -97,18 +204,28 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { useSettingsStore } from '../stores/settings'
+import { useGroupsStore } from '../stores/groups'
 
 const settingsStore = useSettingsStore()
+const groupsStore = useGroupsStore()
 
 const form = reactive({
   interval_minutes: 5,
-  direction: 'native_to_foreign' as 'native_to_foreign' | 'foreign_to_native'
+  direction: 'native_to_foreign' as 'native_to_foreign' | 'foreign_to_native',
+  active_group_id: 'all'
 })
 
 const isSaving = ref(false)
 const showSuccess = ref(false)
+
+// Group management state
+const showAddGroup = ref(false)
+const newGroupName = ref('')
+const editingGroupId = ref<number | null>(null)
+const editGroupName = ref('')
+const editGroupInput = ref<HTMLInputElement | null>(null)
 
 const isValidInterval = computed(() => {
   return typeof form.interval_minutes === 'number' && 
@@ -118,9 +235,52 @@ const isValidInterval = computed(() => {
 
 onMounted(async () => {
   await settingsStore.fetchSettings()
+  await groupsStore.fetchGroups()
   form.interval_minutes = settingsStore.settings.interval_minutes
   form.direction = settingsStore.settings.direction
+  form.active_group_id = settingsStore.settings.active_group_id
 })
+
+const handleAddGroup = async () => {
+  if (!newGroupName.value.trim()) return
+  try {
+    await groupsStore.addGroup(newGroupName.value.trim())
+    newGroupName.value = ''
+    showAddGroup.value = false
+  } catch (error) {
+    console.error('Failed to add group:', error)
+  }
+}
+
+const startRename = async (group: any) => {
+  editingGroupId.value = group.id
+  editGroupName.value = group.name
+  await nextTick()
+  editGroupInput.value?.focus()
+}
+
+const handleRenameGroup = async (id: number) => {
+  if (!editGroupName.value.trim()) return
+  try {
+    await groupsStore.renameGroup(id, editGroupName.value.trim())
+    editingGroupId.value = null
+  } catch (error) {
+    console.error('Failed to rename group:', error)
+  }
+}
+
+const handleDeleteGroup = async (id: number) => {
+  if (id === 1) return
+  if (!confirm('Are you sure? This will delete all words in this group.')) return
+  try {
+    const success = await groupsStore.deleteGroup(id)
+    if (success && form.active_group_id === id.toString()) {
+      form.active_group_id = 'all'
+    }
+  } catch (error) {
+    console.error('Failed to delete group:', error)
+  }
+}
 
 const handleSave = async () => {
   if (!isValidInterval.value) return

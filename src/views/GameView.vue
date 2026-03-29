@@ -20,8 +20,9 @@
             <h2 class="text-3xl font-extrabold tracking-tight break-words" :class="displayWord.length > 15 ? 'text-2xl' : 'text-4xl'">
               {{ displayWord }}
             </h2>
-            <div class="mt-2 text-xs text-gray-400 font-mono tracking-widest opacity-60">
-              #{{ gameStore.currentWord.id }} • {{ gameStore.currentWord.percentage.toFixed(0) }}% Mastery
+            <div class="mt-2 text-xs text-gray-400 font-mono tracking-widest opacity-60 flex flex-col gap-1">
+              <div>#{{ gameStore.currentWord.id }} • {{ gameStore.currentWord.percentage.toFixed(0) }}% Mastery</div>
+              <div v-if="currentGroupName" class="text-[10px] uppercase text-indigo-400/70 tracking-[0.2em]">Group: {{ currentGroupName }}</div>
             </div>
           </div>
         </transition>
@@ -51,10 +52,16 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
           </svg>
         </div>
-        <h3 class="text-white font-bold mb-2">Добавьте слова</h3>
-        <p class="text-sm text-gray-400">Словарь пуст. Добавьте новые слова в настройках.</p>
+        <h3 class="text-white font-bold mb-2">
+          {{ wordsStore.words.length === 0 ? 'Dictionary is empty' : 'No words in group' }}
+        </h3>
+        <p class="text-sm text-gray-400">
+          {{ wordsStore.words.length === 0 
+              ? 'Add words in the main window to start learning.' 
+              : 'Add words to this group or change active group in settings.' }}
+        </p>
         <button @click="closeWindow" class="mt-6 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-sm rounded-lg transition-colors border border-gray-700">
-          Закрыть
+          Close
         </button>
       </div>
       
@@ -68,15 +75,14 @@ import { invoke } from '@tauri-apps/api/core'
 import { useGameStore } from '../stores/game'
 import { useSettingsStore } from '../stores/settings'
 import { useWordsStore } from '../stores/words'
+import { useGroupsStore } from '../stores/groups'
 
 const gameStore = useGameStore()
 const settingsStore = useSettingsStore()
 const wordsStore = useWordsStore()
+const groupsStore = useGroupsStore()
 
 // Computed property to show native or foreign word based on settings
-// word = foreign (e.g. Apple), translate = native (e.g. Яблоко)
-// native_to_foreign: show native word (translate) → user answers foreign
-// foreign_to_native: show foreign word (word) → user answers native
 const displayWord = computed(() => {
   if (!gameStore.currentWord) return ''
   return settingsStore.settings.direction === 'native_to_foreign' 
@@ -84,21 +90,24 @@ const displayWord = computed(() => {
     : gameStore.currentWord.word
 })
 
+const currentGroupName = computed(() => {
+  if (settingsStore.settings.active_group_id === 'all') return 'All Groups'
+  const groupId = parseInt(settingsStore.settings.active_group_id)
+  const group = groupsStore.groups.find(g => g.id === groupId)
+  return group ? group.name : ''
+})
+
 const handleKnow = async () => {
-  console.log('handleKnow clicked, currentWord:', gameStore.currentWord)
   try {
     await gameStore.answer(true)
-    console.log('answer(true) completed, new word:', gameStore.currentWord)
   } catch (e) {
     console.error('answer(true) error:', e)
   }
 }
 
 const handleDontKnow = async () => {
-  console.log('handleDontKnow clicked, currentWord:', gameStore.currentWord)
   try {
     await gameStore.answer(false)
-    console.log('answer(false) completed, new word:', gameStore.currentWord)
   } catch (e) {
     console.error('answer(false) error:', e)
   }
@@ -118,6 +127,7 @@ const handleFocus = async () => {
   // Refetch settings and words each time the window is shown
   await settingsStore.fetchSettings()
   await wordsStore.fetchWords()
+  await groupsStore.fetchGroups()
   gameStore.nextWord()
 }
 
@@ -128,6 +138,7 @@ onMounted(async () => {
   // Load data
   await settingsStore.fetchSettings()
   await wordsStore.fetchWords()
+  await groupsStore.fetchGroups()
   
   // Initialize game
   gameStore.nextWord()

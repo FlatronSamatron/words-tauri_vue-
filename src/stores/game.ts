@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { emit } from '@tauri-apps/api/event'
 import { useWordsStore } from './words'
+import { useSettingsStore } from './settings'
 import type { Word } from '../types'
 
 export const useGameStore = defineStore('game', () => {
@@ -12,7 +13,15 @@ export const useGameStore = defineStore('game', () => {
 
   function nextWord() {
     renderKey.value++
-    const available = wordsStore.words
+    const settingsStore = useSettingsStore()
+    const activeGroupIdStr = settingsStore.settings.active_group_id
+    
+    let available = wordsStore.words
+    if (activeGroupIdStr !== 'all') {
+      const activeGroupId = parseInt(activeGroupIdStr)
+      available = available.filter(w => w.group_id === activeGroupId)
+    }
+
     if (available.length === 0) {
       currentWord.value = null
       return

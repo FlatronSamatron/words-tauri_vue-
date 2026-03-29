@@ -12,19 +12,29 @@ pub struct Word {
     pub correct: i64,
     pub total: i64,
     pub created_at: String,
+    pub group_id: i64,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Settings {
     pub interval_minutes: u32,
     pub direction: String,
+    pub active_group_id: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Group {
+    pub id: i64,
+    pub name: String,
+    pub created_at: String,
+    pub word_count: i64,
 }
 
 #[tauri::command]
 pub fn get_words(app_handle: AppHandle) -> Result<Vec<Word>, String> {
     let conn = get_connection(&app_handle)?;
     let mut stmt = conn
-        .prepare("SELECT id, word, translate, correct, total, created_at FROM words ORDER BY id DESC")
+        .prepare("SELECT id, word, translate, correct, total, created_at, group_id FROM words ORDER BY id DESC")
         .map_err(|e| e.to_string())?;
 
     let words = stmt
@@ -36,6 +46,7 @@ pub fn get_words(app_handle: AppHandle) -> Result<Vec<Word>, String> {
                 correct: row.get(3)?,
                 total: row.get(4)?,
                 created_at: row.get(5)?,
+                group_id: row.get(6)?,
             })
         })
         .map_err(|e| e.to_string())?
@@ -46,11 +57,16 @@ pub fn get_words(app_handle: AppHandle) -> Result<Vec<Word>, String> {
 }
 
 #[tauri::command]
-pub fn add_word(app_handle: AppHandle, word: String, translate: String) -> Result<Word, String> {
+pub fn add_word(
+    app_handle: AppHandle,
+    word: String,
+    translate: String,
+    group_id: i64,
+) -> Result<Word, String> {
     let conn = get_connection(&app_handle)?;
     conn.execute(
-        "INSERT INTO words (word, translate) VALUES (?1, ?2)",
-        params![word, translate],
+        "INSERT INTO words (word, translate, group_id) VALUES (?1, ?2, ?3)",
+        params![word, translate, group_id],
     )
     .map_err(|e| e.to_string())?;
 
@@ -58,7 +74,7 @@ pub fn add_word(app_handle: AppHandle, word: String, translate: String) -> Resul
 
     // Fetch the inserted word to return it
     let mut stmt = conn
-        .prepare("SELECT id, word, translate, correct, total, created_at FROM words WHERE id = ?1")
+        .prepare("SELECT id, word, translate, correct, total, created_at, group_id FROM words WHERE id = ?1")
         .map_err(|e| e.to_string())?;
 
     stmt.query_row(params![id], |row| {
@@ -69,6 +85,7 @@ pub fn add_word(app_handle: AppHandle, word: String, translate: String) -> Resul
             correct: row.get(3)?,
             total: row.get(4)?,
             created_at: row.get(5)?,
+            group_id: row.get(6)?,
         })
     })
     .map_err(|e| e.to_string())
@@ -80,17 +97,18 @@ pub fn update_word(
     id: i64,
     word: String,
     translate: String,
+    group_id: i64,
 ) -> Result<Word, String> {
     let conn = get_connection(&app_handle)?;
     conn.execute(
-        "UPDATE words SET word = ?1, translate = ?2 WHERE id = ?3",
-        params![word, translate, id],
+        "UPDATE words SET word = ?1, translate = ?2, group_id = ?3 WHERE id = ?4",
+        params![word, translate, group_id, id],
     )
     .map_err(|e| e.to_string())?;
 
     // Fetch the updated word
     let mut stmt = conn
-        .prepare("SELECT id, word, translate, correct, total, created_at FROM words WHERE id = ?1")
+        .prepare("SELECT id, word, translate, correct, total, created_at, group_id FROM words WHERE id = ?1")
         .map_err(|e| e.to_string())?;
 
     stmt.query_row(params![id], |row| {
@@ -101,6 +119,7 @@ pub fn update_word(
             correct: row.get(3)?,
             total: row.get(4)?,
             created_at: row.get(5)?,
+            group_id: row.get(6)?,
         })
     })
     .map_err(|e| e.to_string())
@@ -128,7 +147,7 @@ pub fn record_answer(app_handle: AppHandle, id: i64, known: bool) -> Result<Word
     .map_err(|e| e.to_string())?;
 
     let mut stmt = conn
-        .prepare("SELECT id, word, translate, correct, total, created_at FROM words WHERE id = ?1")
+        .prepare("SELECT id, word, translate, correct, total, created_at, group_id FROM words WHERE id = ?1")
         .map_err(|e| e.to_string())?;
 
     stmt.query_row(params![id], |row| {
@@ -139,6 +158,7 @@ pub fn record_answer(app_handle: AppHandle, id: i64, known: bool) -> Result<Word
             correct: row.get(3)?,
             total: row.get(4)?,
             created_at: row.get(5)?,
+            group_id: row.get(6)?,
         })
     })
     .map_err(|e| e.to_string())
@@ -165,10 +185,12 @@ pub fn get_settings(app_handle: AppHandle) -> Result<Settings, String> {
     let interval_minutes: u32 = interval_minutes_str.parse().unwrap_or(5);
     
     let direction = query_setting("direction", "native_to_foreign")?;
+    let active_group_id = query_setting("active_group_id", "all")?;
 
     Ok(Settings {
         interval_minutes,
         direction,
+        active_group_id,
     })
 }
 
@@ -177,6 +199,7 @@ pub fn save_settings(
     app_handle: AppHandle,
     interval_minutes: u32,
     direction: String,
+    active_group_id: String,
 ) -> Result<bool, String> {
     let conn = get_connection(&app_handle)?;
 
@@ -192,7 +215,104 @@ pub fn save_settings(
     )
     .map_err(|e| e.to_string())?;
 
+    conn.execute(
+        "INSERT OR REPLACE INTO settings (key, value) VALUES ('active_group_id', ?1)",
+        params![active_group_id],
+    )
+    .map_err(|e| e.to_string())?;
+
     Ok(true)
+}
+
+#[tauri::command]
+pub fn get_groups(app_handle: AppHandle) -> Result<Vec<Group>, String> {
+    let conn = get_connection(&app_handle)?;
+    let mut stmt = conn
+        .prepare(
+            "SELECT g.id, g.name, g.created_at, COUNT(w.id) as word_count 
+             FROM groups g 
+             LEFT JOIN words w ON g.id = w.group_id 
+             GROUP BY g.id 
+             ORDER BY g.id ASC",
+        )
+        .map_err(|e| e.to_string())?;
+
+    let groups = stmt
+        .query_map([], |row| {
+            Ok(Group {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                created_at: row.get(2)?,
+                word_count: row.get(3)?,
+            })
+        })
+        .map_err(|e| e.to_string())?
+        .filter_map(Result::ok)
+        .collect::<Vec<_>>();
+
+    Ok(groups)
+}
+
+#[tauri::command]
+pub fn add_group(app_handle: AppHandle, name: String) -> Result<Group, String> {
+    let conn = get_connection(&app_handle)?;
+    conn.execute("INSERT INTO groups (name) VALUES (?1)", params![name])
+        .map_err(|e| e.to_string())?;
+
+    let id = conn.last_insert_rowid();
+    let mut stmt = conn
+        .prepare("SELECT id, name, created_at, 0 as word_count FROM groups WHERE id = ?1")
+        .map_err(|e| e.to_string())?;
+
+    stmt.query_row(params![id], |row| {
+        Ok(Group {
+            id: row.get(0)?,
+            name: row.get(1)?,
+            created_at: row.get(2)?,
+            word_count: row.get(3)?,
+        })
+    })
+    .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn rename_group(app_handle: AppHandle, id: i64, name: String) -> Result<Group, String> {
+    let conn = get_connection(&app_handle)?;
+    conn.execute("UPDATE groups SET name = ?1 WHERE id = ?2", params![name, id])
+        .map_err(|e| e.to_string())?;
+
+    let mut stmt = conn
+        .prepare(
+            "SELECT g.id, g.name, g.created_at, COUNT(w.id) as word_count 
+             FROM groups g 
+             LEFT JOIN words w ON g.id = w.group_id 
+             WHERE g.id = ?1
+             GROUP BY g.id",
+        )
+        .map_err(|e| e.to_string())?;
+
+    stmt.query_row(params![id], |row| {
+        Ok(Group {
+            id: row.get(0)?,
+            name: row.get(1)?,
+            created_at: row.get(2)?,
+            word_count: row.get(3)?,
+        })
+    })
+    .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn delete_group(app_handle: AppHandle, id: i64) -> Result<bool, String> {
+    if id == 1 {
+        return Err("Cannot delete default group".to_string());
+    }
+    let conn = get_connection(&app_handle)?;
+    let rows_affected = conn
+        .execute("DELETE FROM groups WHERE id = ?1", params![id])
+        .map_err(|e| e.to_string())?;
+
+    Ok(rows_affected > 0)
 }
 
 #[tauri::command]

@@ -1,39 +1,6 @@
-use rusqlite::Connection;
+use rusqlite::{Connection, params};
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
-use tauri_plugin_sql::{Migration, MigrationKind};
-
-pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R, std::option::Option<tauri_plugin_sql::PluginConfig>> {
-    let migrations = vec![
-        Migration {
-            version: 1,
-            description: "create_tables",
-            sql: "
-            CREATE TABLE IF NOT EXISTS words (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              word TEXT NOT NULL,
-              translate TEXT NOT NULL,
-              correct INTEGER DEFAULT 0,
-              total INTEGER DEFAULT 0,
-              created_at TEXT DEFAULT (datetime('now'))
-            );
-
-            CREATE TABLE IF NOT EXISTS settings (
-              key TEXT PRIMARY KEY,
-              value TEXT NOT NULL
-            );
-
-            INSERT OR IGNORE INTO settings VALUES ('interval_minutes', '5');
-            INSERT OR IGNORE INTO settings VALUES ('direction', 'native_to_foreign');
-            ",
-            kind: MigrationKind::Up,
-        }
-    ];
-
-    tauri_plugin_sql::Builder::default()
-        .add_migrations("sqlite:words.db", migrations)
-        .build()
-}
 
 pub fn get_db_path(app_handle: &AppHandle) -> Result<PathBuf, String> {
     // In Tauri v2, tauri-plugin-sql resolves "sqlite:filename.db" inside app_config_dir or app_data_dir.
@@ -42,6 +9,65 @@ pub fn get_db_path(app_handle: &AppHandle) -> Result<PathBuf, String> {
     let config_dir = path_resolver.app_config_dir().map_err(|e| e.to_string())?;
     // By default in Tauri 2, plugin-sql uses appConfigDir unless specified otherwise
     Ok(config_dir.join("words.db"))
+}
+
+pub fn ensure_migrated(app_handle: &AppHandle) -> Result<(), String> {
+    let mut conn = get_connection(app_handle)?;
+    
+    // Check if groups table exists
+    let table_exists: bool = conn.query_row(
+        "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='groups'",
+        [],
+        |row| row.get(0),
+    ).unwrap_or(0) > 0;
+
+    if !table_exists {
+        let tx = conn.transaction().map_err(|e| e.to_string())?;
+        
+        tx.execute(
+            "CREATE TABLE IF NOT EXISTS groups (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              name TEXT NOT NULL UNIQUE,
+              created_at TEXT DEFAULT (datetime('now'))
+            );",
+            [],
+        ).map_err(|e| e.to_string())?;
+
+        tx.execute("INSERT OR IGNORE INTO groups (id, name) VALUES (1, 'Default');", []).map_err(|e| e.to_string())?;
+        
+        // Add group_id to words if not exists
+        let has_column: bool = tx.query_row(
+            "SELECT count(*) FROM pragma_table_info('words') WHERE name='group_id'",
+            [],
+            |row| row.get(0),
+        ).unwrap_or(0) > 0;
+
+        if !has_column {
+            tx.execute("ALTER TABLE words ADD COLUMN group_id INTEGER DEFAULT 1;", []).map_err(|e| e.to_string())?;
+        }
+
+        tx.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('active_group_id', 'all');", []).map_err(|e| e.to_string())?;
+
+        // Add 5 groups with 20 words each as requested
+        let test_groups = vec!["Travel", "Food", "Work", "Leisure", "Daily"];
+        for (i, &name) in test_groups.iter().enumerate() {
+            let group_id = (i + 2) as i64;
+            tx.execute("INSERT OR IGNORE INTO groups (id, name) VALUES (?1, ?2)", params![group_id, name]).map_err(|e| e.to_string())?;
+            
+            for j in 1..=20 {
+                let word = format!("{}_word_{}", name, j);
+                let trans = format!("{}_перевод_{}", name, j);
+                tx.execute(
+                    "INSERT INTO words (word, translate, group_id) VALUES (?1, ?2, ?3)",
+                    params![word, trans, group_id]
+                ).map_err(|e| e.to_string())?;
+            }
+        }
+
+        tx.commit().map_err(|e| e.to_string())?;
+    }
+    
+    Ok(())
 }
 
 pub fn get_connection(app_handle: &AppHandle) -> Result<Connection, String> {

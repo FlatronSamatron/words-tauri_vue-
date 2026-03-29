@@ -33,8 +33,15 @@ pub fn run() {
 
             use tauri::Listener;
             
+            // Manual migration to ensure groups table and columns exist
+            db::ensure_migrated(app.handle())?;
+
             let settings = commands::get_settings(app.handle().clone())
-                .unwrap_or(commands::Settings { interval_minutes: 5, direction: "native_to_foreign".to_string() });
+                .unwrap_or(commands::Settings { 
+                    interval_minutes: 5, 
+                    direction: "native_to_foreign".to_string(),
+                    active_group_id: "all".to_string() 
+                });
 
             let timer_state = std::sync::Arc::new(TrayTimerState {
                 last_activity: std::sync::Mutex::new(std::time::Instant::now()),
@@ -177,7 +184,6 @@ pub fn run() {
             _ => {}
         })
         .plugin(tauri_plugin_opener::init())
-        .plugin(db::init())
         .invoke_handler(tauri::generate_handler![
             commands::get_words,
             commands::add_word,
@@ -186,6 +192,10 @@ pub fn run() {
             commands::record_answer,
             commands::get_settings,
             commands::save_settings,
+            commands::get_groups,
+            commands::add_group,
+            commands::rename_group,
+            commands::delete_group,
             commands::log_test,
             commands::open_game_window,
             commands::close_game_window,

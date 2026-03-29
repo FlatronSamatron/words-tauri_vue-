@@ -2,7 +2,7 @@
   <div class="h-screen w-screen bg-gray-50 flex flex-col overflow-hidden">
     <!-- Header/Navigation Bar -->
     <header class="bg-white border-b border-gray-200 px-6 py-4 flex-shrink-0 z-10 shadow-sm relative">
-      <div class="flex items-center justify-between max-w-7xl mx-auto w-full">
+      <div class="flex items-center justify-between mx-auto w-full">
         <div class="flex items-center space-x-2">
           <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-sm">
             L

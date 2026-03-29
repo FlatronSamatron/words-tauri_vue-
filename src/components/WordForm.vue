@@ -33,6 +33,18 @@
         />
         <p v-if="showError && !translate" class="mt-1 text-sm text-red-500">Translation is required</p>
       </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1.5">Group</label>
+        <select 
+          v-model="selectedGroupId"
+          class="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all duration-200"
+        >
+          <option v-for="group in groupsStore.groups" :key="group.id" :value="group.id">
+            {{ group.name }}
+          </option>
+        </select>
+      </div>
+
       <button 
         type="submit" 
         class="w-full bg-indigo-600 text-white font-medium py-2.5 px-4 rounded-lg hover:bg-indigo-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
@@ -46,20 +58,41 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useWordsStore } from '../stores/words'
+import { useGroupsStore } from '../stores/groups'
+import { useSettingsStore } from '../stores/settings'
 
 const wordsStore = useWordsStore()
+const groupsStore = useGroupsStore()
+const settingsStore = useSettingsStore()
 
 const wordInput = ref<HTMLInputElement | null>(null)
 const word = ref('')
 const translate = ref('')
+const selectedGroupId = ref<number>(1)
 const showError = ref(false)
 const isSubmitting = ref(false)
 const showSuccess = ref(false)
 
-onMounted(() => {
+onMounted(async () => {
   wordInput.value?.focus()
+  await groupsStore.fetchGroups()
+  
+  // Set default group from settings
+  const active = settingsStore.settings.active_group_id
+  if (active !== 'all') {
+    selectedGroupId.value = parseInt(active)
+  } else {
+    selectedGroupId.value = 1 // Default
+  }
+})
+
+// Update selected group if active group changes in settings
+watch(() => settingsStore.settings.active_group_id, (newVal) => {
+  if (newVal !== 'all') {
+    selectedGroupId.value = parseInt(newVal)
+  }
 })
 
 const handleSubmit = async () => {
@@ -72,7 +105,7 @@ const handleSubmit = async () => {
   isSubmitting.value = true
 
   try {
-    await wordsStore.addWord(word.value.trim(), translate.value.trim())
+    await wordsStore.addWord(word.value.trim(), translate.value.trim(), selectedGroupId.value)
     word.value = ''
     translate.value = ''
     

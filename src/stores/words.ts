@@ -8,7 +8,8 @@ export const useWordsStore = defineStore('words', () => {
 
   const mapWord = (w: any): Word => ({
     ...w,
-    percentage: w.total > 0 ? (w.correct / w.total) * 100 : 0
+    percentage: w.total > 0 ? (w.correct / w.total) * 100 : 0,
+    group_id: w.group_id
   })
 
   async function fetchWords() {
@@ -16,15 +17,15 @@ export const useWordsStore = defineStore('words', () => {
     words.value = res.map(mapWord)
   }
 
-  async function addWord(word: string, translate: string) {
-    const raw: any = await invoke('add_word', { word, translate })
+  async function addWord(word: string, translate: string, groupId: number) {
+    const raw: any = await invoke('add_word', { word, translate, groupId })
     const newWord = mapWord(raw)
     words.value.unshift(newWord) // add to top
     return newWord
   }
 
-  async function updateWord(id: number, word: string, translate: string) {
-    const raw: any = await invoke('update_word', { id, word, translate })
+  async function updateWord(id: number, word: string, translate: string, groupId: number) {
+    const raw: any = await invoke('update_word', { id, word, translate, groupId })
     const updated = mapWord(raw)
     const index = words.value.findIndex(w => w.id === id)
     if (index !== -1) {
