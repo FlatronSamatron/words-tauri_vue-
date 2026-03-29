@@ -8,26 +8,27 @@ export const useGameStore = defineStore('game', () => {
   const currentWord = ref<Word | null>(null)
   const wordsStore = useWordsStore()
 
+  const renderKey = ref(0)
+
   function nextWord() {
+    renderKey.value++
     const available = wordsStore.words
     if (available.length === 0) {
       currentWord.value = null
       return
     }
-    // Optional logic to avoid repetition artificially suppresses correct distribution
-    // Keep raw selection array instead.
-    let candidates = available
 
-    // Assign weights:
-    // We want 0% words to be significantly more likely to be picked.
-    // 100% words get weight 1
-    // 0% words get weight 1000
-    // Something in between scales linearly or exponentially.
+    let candidates = available
+    // Prevent showing the exact same word twice in a row if there are alternatives
+    if (available.length > 1 && currentWord.value) {
+      candidates = available.filter(w => w.id !== currentWord.value!.id)
+    }
+
     const weights = candidates.map(w => {
       const p = w.percentage
       if (p === 100) return 1
       if (p === 0) return 1000
-      return Math.floor(1000 - (p * 9.99)) // 10% -> 900, 50% -> 500
+      return Math.floor(1000 - (p * 9.99))
     })
 
     const totalWeight = weights.reduce((acc, val) => acc + val, 0)
@@ -41,7 +42,6 @@ export const useGameStore = defineStore('game', () => {
         return
       }
     }
-    // Fallback
     currentWord.value = candidates[candidates.length - 1]
   }
 
@@ -53,5 +53,5 @@ export const useGameStore = defineStore('game', () => {
     nextWord()
   }
 
-  return { currentWord, nextWord, answer }
+  return { currentWord, renderKey, nextWord, answer }
 })

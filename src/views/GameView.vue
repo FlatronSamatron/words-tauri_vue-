@@ -4,7 +4,7 @@
     
     <!-- Header -->
     <div class="absolute top-0 left-0 right-0 p-3 flex justify-end z-10" data-tauri-drag-region>
-      <button @click="closeWindow" class="text-gray-400 hover:text-white transition-colors focus:outline-none p-1 bg-gray-800/50 hover:bg-gray-700/80 rounded-full backdrop-blur-sm">
+      <button @click="closeWindow" data-tauri-drag-region="false" class="text-gray-400 hover:text-white transition-colors focus:outline-none p-1 bg-gray-800/50 hover:bg-gray-700/80 rounded-full backdrop-blur-sm">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
         </svg>
@@ -17,7 +17,7 @@
       <div v-if="gameStore.currentWord" class="w-full max-w-sm flex flex-col items-center">
         <!-- Word display with transition -->
         <transition name="slide-fade" mode="out-in">
-          <div :key="gameStore.currentWord.id" class="text-center w-full mb-8">
+          <div :key="gameStore.currentWord.id + '-' + gameStore.renderKey" class="text-center w-full mb-8">
             <h2 class="text-3xl font-extrabold tracking-tight break-words" :class="displayWord.length > 15 ? 'text-2xl' : 'text-4xl'">
               {{ displayWord }}
             </h2>
@@ -29,14 +29,14 @@
 
         <!-- Action Buttons -->
         <div class="flex gap-4 w-full justify-center">
-          <button @click="handleDontKnow" class="flex-1 py-3 px-4 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500 hover:text-white transition-all duration-200 font-semibold text-sm flex items-center justify-center gap-2 group focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 focus:ring-offset-gray-900 select-none">
+          <button @click="handleDontKnow" data-tauri-drag-region="false" class="flex-1 py-3 px-4 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500 hover:text-white transition-all duration-200 font-semibold text-sm flex items-center justify-center gap-2 group focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 focus:ring-offset-gray-900 select-none">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
             Don't Know <span class="text-[10px] opacity-50 ml-1 hidden sm:inline">(←)</span>
           </button>
           
-          <button @click="handleKnow" class="flex-1 py-3 px-4 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500 hover:text-white transition-all duration-200 font-semibold text-sm flex items-center justify-center gap-2 group focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-gray-900 select-none">
+          <button @click="handleKnow" data-tauri-drag-region="false" class="flex-1 py-3 px-4 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500 hover:text-white transition-all duration-200 font-semibold text-sm flex items-center justify-center gap-2 group focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-gray-900 select-none">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
             </svg>
@@ -54,7 +54,7 @@
         </div>
         <h3 class="text-white font-bold mb-2">Добавьте слова</h3>
         <p class="text-sm text-gray-400">Словарь пуст. Добавьте новые слова в настройках.</p>
-        <button @click="closeWindow" class="mt-6 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-sm rounded-lg transition-colors border border-gray-700">
+        <button @click="closeWindow" data-tauri-drag-region="false" class="mt-6 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-sm rounded-lg transition-colors border border-gray-700">
           Закрыть
         </button>
       </div>

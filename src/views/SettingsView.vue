@@ -1,11 +1,11 @@
 <template>
-  <div class="h-full w-full flex flex-col p-6 max-w-2xl mx-auto">
+  <div class="h-full w-full flex flex-col p-6 max-w-2xl mx-auto overflow-y-auto">
     <div class="mb-8">
       <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Settings</h1>
       <p class="text-sm text-gray-500 mt-1">Configure your learning experience</p>
     </div>
     
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex-1">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden overflow-y-auto">
       <div class="p-6 space-y-8">
         <!-- Interval Setting -->
         <div>

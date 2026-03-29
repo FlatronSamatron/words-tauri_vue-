@@ -39,7 +39,7 @@
     </header>
 
     <!-- Main Content Area -->
-    <main class="flex-1 overflow-hidden relative" style="height: calc(100vh - 73px);">
+    <main class="flex-1 overflow-hidden relative flex flex-col" style="height: calc(100vh - 73px);">
       <transition name="fade" mode="out-in">
         <keep-alive>
           <component :is="activeComponent" />

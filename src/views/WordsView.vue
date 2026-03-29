@@ -1,5 +1,5 @@
 <template>
-  <div class="h-full w-full flex flex-col p-6 space-y-6">
+  <div class="h-full w-full flex flex-col p-6 space-y-6 overflow-y-auto">
     <div class="flex justify-between items-end mb-2">
       <div>
         <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Words Library</h1>
