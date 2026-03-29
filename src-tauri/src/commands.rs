@@ -223,6 +223,7 @@ pub fn set_tray_active(app_handle: AppHandle) -> Result<(), String> {
         let icon = tauri::image::Image::from_bytes(include_bytes!("../icons/icon-active.png"))
             .map_err(|e| e.to_string())?;
         tray.set_icon(Some(icon)).map_err(|e| e.to_string())?;
+        let _ = tray.set_icon_as_template(true);
     }
     Ok(())
 }
@@ -233,6 +234,7 @@ pub fn set_tray_normal(app_handle: AppHandle) -> Result<(), String> {
         let icon = tauri::image::Image::from_bytes(include_bytes!("../icons/icon-normal.png"))
             .map_err(|e| e.to_string())?;
         tray.set_icon(Some(icon)).map_err(|e| e.to_string())?;
+        let _ = tray.set_icon_as_template(true);
     }
     Ok(())
 }

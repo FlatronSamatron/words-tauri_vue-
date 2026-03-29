@@ -23,6 +23,9 @@ mod db;
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
+            #[cfg(target_os = "macos")]
+            app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+
             app.manage(GamePopupState {
                 last_hidden: AtomicI64::new(0),
                 has_been_positioned: AtomicBool::new(false),
@@ -91,6 +94,7 @@ pub fn run() {
                 .icon(tauri::image::Image::from_bytes(include_bytes!(
                     "../icons/icon-normal.png"
                 ))?)
+                .icon_as_template(true)
                 .menu(&menu)
                 .show_menu_on_left_click(false)
                 .on_menu_event(|app, event| match event.id.as_ref() {
