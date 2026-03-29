@@ -1,18 +1,17 @@
 <template>
-  <div class="h-screen w-screen bg-gray-900 text-white flex flex-col overflow-hidden relative font-sans select-none"
-       ref="gameContainer">
+  <div class="h-screen w-screen bg-gray-900 text-white flex flex-col overflow-hidden relative font-sans select-none">
     
-    <!-- Header -->
-    <div class="absolute top-0 left-0 right-0 p-3 flex justify-end z-10" data-tauri-drag-region>
-      <button @click="closeWindow" data-tauri-drag-region="false" class="text-gray-400 hover:text-white transition-colors focus:outline-none p-1 bg-gray-800/50 hover:bg-gray-700/80 rounded-full backdrop-blur-sm">
+    <!-- Thin drag region header — ONLY this area is draggable -->
+    <div class="h-10 w-full flex-shrink-0 flex items-center justify-end px-3" data-tauri-drag-region>
+      <button @click="closeWindow" class="relative z-10 text-gray-400 hover:text-white transition-colors focus:outline-none p-1 bg-gray-800/50 hover:bg-gray-700/80 rounded-full backdrop-blur-sm">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
         </svg>
       </button>
     </div>
 
-    <!-- Main Content -->
-    <main class="flex-1 flex flex-col items-center justify-center p-6 w-full" data-tauri-drag-region>
+    <!-- Main Content (NO drag region here) -->
+    <main class="flex-1 flex flex-col items-center justify-center p-6 w-full">
       
       <div v-if="gameStore.currentWord" class="w-full max-w-sm flex flex-col items-center">
         <!-- Word display with transition -->
@@ -29,14 +28,14 @@
 
         <!-- Action Buttons -->
         <div class="flex gap-4 w-full justify-center">
-          <button @click="handleDontKnow" data-tauri-drag-region="false" class="flex-1 py-3 px-4 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500 hover:text-white transition-all duration-200 font-semibold text-sm flex items-center justify-center gap-2 group focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 focus:ring-offset-gray-900 select-none">
+          <button @click="handleDontKnow" class="flex-1 py-3 px-4 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500 hover:text-white transition-all duration-200 font-semibold text-sm flex items-center justify-center gap-2 group focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 focus:ring-offset-gray-900 select-none">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
             Don't Know <span class="text-[10px] opacity-50 ml-1 hidden sm:inline">(←)</span>
           </button>
           
-          <button @click="handleKnow" data-tauri-drag-region="false" class="flex-1 py-3 px-4 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500 hover:text-white transition-all duration-200 font-semibold text-sm flex items-center justify-center gap-2 group focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-gray-900 select-none">
+          <button @click="handleKnow" class="flex-1 py-3 px-4 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500 hover:text-white transition-all duration-200 font-semibold text-sm flex items-center justify-center gap-2 group focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-gray-900 select-none">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
             </svg>
@@ -54,7 +53,7 @@
         </div>
         <h3 class="text-white font-bold mb-2">Добавьте слова</h3>
         <p class="text-sm text-gray-400">Словарь пуст. Добавьте новые слова в настройках.</p>
-        <button @click="closeWindow" data-tauri-drag-region="false" class="mt-6 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-sm rounded-lg transition-colors border border-gray-700">
+        <button @click="closeWindow" class="mt-6 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-sm rounded-lg transition-colors border border-gray-700">
           Закрыть
         </button>
       </div>
@@ -75,19 +74,34 @@ const settingsStore = useSettingsStore()
 const wordsStore = useWordsStore()
 
 // Computed property to show native or foreign word based on settings
+// word = foreign (e.g. Apple), translate = native (e.g. Яблоко)
+// native_to_foreign: show native word (translate) → user answers foreign
+// foreign_to_native: show foreign word (word) → user answers native
 const displayWord = computed(() => {
   if (!gameStore.currentWord) return ''
   return settingsStore.settings.direction === 'native_to_foreign' 
-    ? gameStore.currentWord.word 
-    : gameStore.currentWord.translate
+    ? gameStore.currentWord.translate 
+    : gameStore.currentWord.word
 })
 
 const handleKnow = async () => {
-  await gameStore.answer(true)
+  console.log('handleKnow clicked, currentWord:', gameStore.currentWord)
+  try {
+    await gameStore.answer(true)
+    console.log('answer(true) completed, new word:', gameStore.currentWord)
+  } catch (e) {
+    console.error('answer(true) error:', e)
+  }
 }
 
 const handleDontKnow = async () => {
-  await gameStore.answer(false)
+  console.log('handleDontKnow clicked, currentWord:', gameStore.currentWord)
+  try {
+    await gameStore.answer(false)
+    console.log('answer(false) completed, new word:', gameStore.currentWord)
+  } catch (e) {
+    console.error('answer(false) error:', e)
+  }
 }
 
 const closeWindow = async () => {
@@ -100,8 +114,16 @@ const handleKeydown = async (e: KeyboardEvent) => {
   if (e.key === 'Escape') await closeWindow()
 }
 
+const handleFocus = async () => {
+  // Refetch settings and words each time the window is shown
+  await settingsStore.fetchSettings()
+  await wordsStore.fetchWords()
+  gameStore.nextWord()
+}
+
 onMounted(async () => {
   window.addEventListener('keydown', handleKeydown)
+  window.addEventListener('focus', handleFocus)
 
   // Load data
   await settingsStore.fetchSettings()
@@ -113,6 +135,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
+  window.removeEventListener('focus', handleFocus)
 })
 </script>
 

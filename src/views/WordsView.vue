@@ -40,7 +40,8 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
+import { onMounted, onUnmounted, computed } from 'vue'
+import { listen } from '@tauri-apps/api/event'
 import { useWordsStore } from '../stores/words'
 import WordForm from '../components/WordForm.vue'
 import WordsTable from '../components/WordsTable.vue'
@@ -55,7 +56,18 @@ const weakCount = computed(() => {
   return wordsStore.words.filter(w => w.total === 0 || w.percentage < 50).length
 })
 
-onMounted(() => {
+let unlisten: (() => void) | null = null
+
+onMounted(async () => {
   wordsStore.fetchWords()
+  
+  // Listen for answers recorded in the game window and refresh data
+  unlisten = await listen('answer-recorded', () => {
+    wordsStore.fetchWords()
+  })
+})
+
+onUnmounted(() => {
+  if (unlisten) unlisten()
 })
 </script>

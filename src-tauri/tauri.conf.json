@@ -21,10 +21,11 @@
         "url": "/#/game",
         "title": "",
         "width": 320,
-        "height": 200,
+        "height": 280,
         "decorations": false,
         "alwaysOnTop": true,
-        "visible": false
+        "visible": false,
+        "acceptFirstMouse": true
       }
     ],
     "security": {

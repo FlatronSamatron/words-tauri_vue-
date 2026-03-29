@@ -42,7 +42,20 @@
                 </div>
               </td>
               <td class="px-6 py-4 text-right text-sm">
-                <button @click="confirmDelete(item.id)" class="text-gray-400 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100 p-1.5 focus:opacity-100 focus:outline-none">
+                <div v-if="deletingId === item.id" class="flex items-center justify-end gap-1.5">
+                  <span class="text-xs text-red-500 font-medium mr-1">Delete?</span>
+                  <button @click="executeDelete" class="text-white bg-red-500 hover:bg-red-600 rounded p-1 transition-colors focus:outline-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                  </button>
+                  <button @click="cancelDelete" class="text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded p-1 transition-colors focus:outline-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+                <button v-else @click="confirmDelete(item.id)" class="text-gray-400 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100 p-1.5 focus:opacity-100 focus:outline-none">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
@@ -122,15 +135,15 @@ const wordsStore = useWordsStore()
 // State
 const editingId = ref<number | null>(null)
 const editForm = ref({ word: '', translate: '' })
-const sortAsc = ref<boolean | null>(true) // true = ascending (weakest first), false = descending, null = default (id/created)
+const sortAsc = ref<boolean | null>(true)
 const editWordInput = ref<HTMLInputElement[]>([])
+const deletingId = ref<number | null>(null)
 
 // Sorting logic
 const sortedWords = computed(() => {
   const words = [...wordsStore.words]
   if (sortAsc.value === true) {
     return words.sort((a, b) => {
-      // If a has 0 total and b hasn't, a should be first if ascending
       if (a.total === 0 && b.total !== 0) return -1
       if (b.total === 0 && a.total !== 0) return 1
       return a.percentage - b.percentage
@@ -188,13 +201,22 @@ const saveEdit = async () => {
 }
 
 // Deleting logic
-const confirmDelete = async (id: number) => {
-  if (confirm('Are you sure you want to delete this word?')) {
-    try {
-      await wordsStore.deleteWord(id)
-    } catch (error) {
-      console.error('Failed to delete word:', error)
-    }
+const confirmDelete = (id: number) => {
+  deletingId.value = id
+}
+
+const cancelDelete = () => {
+  deletingId.value = null
+}
+
+const executeDelete = async () => {
+  if (!deletingId.value) return
+  try {
+    await wordsStore.deleteWord(deletingId.value)
+  } catch (error) {
+    console.error('Failed to delete word:', error)
+  } finally {
+    deletingId.value = null
   }
 }
 </script>
