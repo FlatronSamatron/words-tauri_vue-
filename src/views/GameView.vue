@@ -1,9 +1,5 @@
 <template>
   <div class="h-screen w-screen bg-gray-900 text-white flex flex-col overflow-hidden relative font-sans select-none"
-       @keydown.left="handleDontKnow" 
-       @keydown.right="handleKnow" 
-       @keydown.esc="closeWindow" 
-       tabindex="0" 
        ref="gameContainer">
     
     <!-- Header -->
@@ -56,10 +52,10 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
           </svg>
         </div>
-        <h3 class="text-white font-bold mb-2">No words to learn!</h3>
-        <p class="text-sm text-gray-400">Add words in the main window settings to start learning.</p>
+        <h3 class="text-white font-bold mb-2">Добавьте слова</h3>
+        <p class="text-sm text-gray-400">Словарь пуст. Добавьте новые слова в настройках.</p>
         <button @click="closeWindow" class="mt-6 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-sm rounded-lg transition-colors border border-gray-700">
-          Close
+          Закрыть
         </button>
       </div>
       
@@ -68,7 +64,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useGameStore } from '../stores/game'
 import { useSettingsStore } from '../stores/settings'
@@ -77,8 +73,6 @@ import { useWordsStore } from '../stores/words'
 const gameStore = useGameStore()
 const settingsStore = useSettingsStore()
 const wordsStore = useWordsStore()
-
-const gameContainer = ref<HTMLElement | null>(null)
 
 // Computed property to show native or foreign word based on settings
 const displayWord = computed(() => {
@@ -100,19 +94,25 @@ const closeWindow = async () => {
   await invoke('close_game_window')
 }
 
+const handleKeydown = async (e: KeyboardEvent) => {
+  if (e.key === 'ArrowLeft') await handleDontKnow()
+  if (e.key === 'ArrowRight') await handleKnow()
+  if (e.key === 'Escape') await closeWindow()
+}
+
 onMounted(async () => {
+  window.addEventListener('keydown', handleKeydown)
+
   // Load data
   await settingsStore.fetchSettings()
   await wordsStore.fetchWords()
   
   // Initialize game
   gameStore.nextWord()
-  
-  // Focus container to capture keyboard events immediately
-  await nextTick()
-  if (gameContainer.value) {
-    gameContainer.value.focus()
-  }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown)
 })
 </script>
 
