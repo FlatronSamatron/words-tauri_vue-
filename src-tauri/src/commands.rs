@@ -1,6 +1,6 @@
 use rusqlite::{params, OptionalExtension};
 use serde::{Deserialize, Serialize};
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 
 use crate::db::get_connection;
 
@@ -198,4 +198,53 @@ pub fn save_settings(
 #[tauri::command]
 pub fn log_test(msg: String) {
     println!("TEST_JS_OUTPUT: {}", msg);
+}
+
+#[tauri::command]
+pub fn open_game_window(app_handle: AppHandle) -> Result<(), String> {
+    if let Some(window) = app_handle.get_webview_window("game") {
+        window.show().map_err(|e| e.to_string())?;
+        window.set_focus().map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn close_game_window(app_handle: AppHandle) -> Result<(), String> {
+    if let Some(window) = app_handle.get_webview_window("game") {
+        window.hide().map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn set_tray_active(app_handle: AppHandle) -> Result<(), String> {
+    if let Some(tray) = app_handle.tray_by_id("tray") {
+        let icon = tauri::image::Image::from_bytes(include_bytes!("../icons/icon-active.png"))
+            .map_err(|e| e.to_string())?;
+        tray.set_icon(Some(icon)).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn set_tray_normal(app_handle: AppHandle) -> Result<(), String> {
+    if let Some(tray) = app_handle.tray_by_id("tray") {
+        let icon = tauri::image::Image::from_bytes(include_bytes!("../icons/icon-normal.png"))
+            .map_err(|e| e.to_string())?;
+        tray.set_icon(Some(icon)).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn update_timer_interval(
+    state: tauri::State<'_, std::sync::Arc<crate::TrayTimerState>>,
+    app_handle: AppHandle,
+    minutes: u32,
+) -> Result<(), String> {
+    *state.interval_minutes.lock().unwrap() = minutes;
+    *state.last_activity.lock().unwrap() = std::time::Instant::now();
+    set_tray_normal(app_handle)?;
+    Ok(())
 }

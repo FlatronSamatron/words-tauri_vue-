@@ -15,6 +15,16 @@
         "title": "Words",
         "width": 800,
         "height": 600
+      },
+      {
+        "label": "game",
+        "url": "/#/game",
+        "title": "",
+        "width": 320,
+        "height": 200,
+        "decorations": false,
+        "alwaysOnTop": true,
+        "visible": false
       }
     ],
     "security": {

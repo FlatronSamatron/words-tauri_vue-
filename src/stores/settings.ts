@@ -22,6 +22,7 @@ export const useSettingsStore = defineStore('settings', () => {
       intervalMinutes: newSettings.interval_minutes,
       direction: newSettings.direction
     })
+    await invoke('update_timer_interval', { minutes: newSettings.interval_minutes })
     settings.value = { ...newSettings }
   }
 

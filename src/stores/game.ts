@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { emit } from '@tauri-apps/api/event'
 import { useWordsStore } from './words'
 import type { Word } from '../types'
 
@@ -48,6 +49,7 @@ export const useGameStore = defineStore('game', () => {
     if (!currentWord.value) return
     
     await wordsStore.recordAnswer(currentWord.value.id, known)
+    await emit('answer-recorded')
     nextWord()
   }
 
