@@ -24,7 +24,12 @@
         "height": 280,
         "decorations": false,
         "transparent": true,
-        "backgroundColor": [0, 0, 0, 0],
+        "backgroundColor": [
+          0,
+          0,
+          0,
+          0
+        ],
         "center": true,
         "alwaysOnTop": true,
         "visible": false,
