@@ -19,30 +19,52 @@
       </div>
 
       <!-- Main Content -->
-      <main class="flex-1 flex flex-col items-center justify-center p-6 w-full overflow-hidden">
-        
-        <div v-if="gameStore.currentWord" class="w-full max-w-sm flex flex-col items-center">
-          <!-- Word display with transition -->
-          <transition name="slide-fade" mode="out-in">
-            <div :key="gameStore.currentWord.id + '-' + gameStore.renderKey" class="text-center w-full mb-6">
-              <h2 class="text-3xl font-extrabold tracking-tight break-words" :class="displayWord.length > 15 ? 'text-2xl' : 'text-4xl'">
-                {{ displayWord }}
-              </h2>
-              <div class="mt-2 text-[10px] text-gray-400 font-mono tracking-widest opacity-60 flex flex-col gap-0.5 uppercase">
-                <div>#{{ gameStore.currentWord.id }} • {{ gameStore.currentWord.percentage.toFixed(0) }}% Mastery</div>
-                <div v-if="currentGroupName" class="text-indigo-400/80">Group: {{ currentGroupName }}</div>
+      <main class="flex-1 flex flex-col items-center justify-between px-6 pb-5 pt-2 w-full overflow-hidden">
+
+        <div v-if="gameStore.currentWord" class="w-full flex flex-col items-center justify-between h-full">
+          <!-- Word zone -->
+          <div class="w-full flex flex-col items-center justify-center overflow-hidden">
+            <transition name="slide-fade" mode="out-in">
+              <div :key="gameStore.currentWord.id + '-' + gameStore.renderKey" class="text-center w-full">
+                <h2 class="font-extrabold tracking-tight truncate leading-tight text-3xl">
+                  {{ displayWord }}
+                </h2>
               </div>
+            </transition>
+
+            <!-- Meta -->
+            <div class="mt-2 w-full flex flex-col items-center text-[10px] text-gray-400 font-mono tracking-widest opacity-60 uppercase gap-0.5">
+              <div>#{{ gameStore.currentWord.id }} • {{ gameStore.currentWord.percentage.toFixed(0) }}% Mastery</div>
+              <div v-if="currentGroupName" class="text-indigo-400/80">Group: {{ currentGroupName }}</div>
             </div>
-          </transition>
+          </div>
+
+          <!-- Translation reveal zone -->
+          <div
+            class="h-10 relative w-full flex items-center justify-center cursor-pointer"
+            @click="isRevealed = !isRevealed"
+          >
+            <p
+              class="text-base font-semibold text-gray-200 text-center transition-all duration-500 ease-out px-4 truncate w-full"
+              :style="{ filter: isRevealed ? 'blur(0px)' : 'blur(7px)' }"
+            >
+              {{ translateWord }}
+            </p>
+            <Transition name="hint-fade">
+              <span
+                v-if="!isRevealed"
+                class="absolute text-[9px] text-gray-500 uppercase tracking-widest pointer-events-none"
+              >tap to reveal</span>
+            </Transition>
+          </div>
 
           <!-- Action Buttons -->
-          <div class="flex gap-3 w-full justify-center">
-            <button @click="handleDontKnow" class="flex-1 py-2.5 px-4 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500 hover:text-white transition-all duration-200 font-semibold text-xs flex items-center justify-center gap-1.5 group focus:outline-none select-none">
-              Don't Know <span class="text-[9px] opacity-40 ml-0.5 hidden sm:inline">(←)</span>
+          <div class="h-11 flex gap-3 w-full">
+            <button @click="handleDontKnow" class="flex-1 h-full rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500 hover:text-white transition-all duration-200 font-semibold text-xs flex items-center justify-center focus:outline-none select-none">
+              Don't Know
             </button>
-            
-            <button @click="handleKnow" class="flex-1 py-2.5 px-4 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500 hover:text-white transition-all duration-200 font-semibold text-xs flex items-center justify-center gap-1.5 group focus:outline-none select-none">
-              Know <span class="text-[9px] opacity-40 ml-0.5 hidden sm:inline">(→)</span>
+            <button @click="handleKnow" class="flex-1 h-full rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500 hover:text-white transition-all duration-200 font-semibold text-xs flex items-center justify-center focus:outline-none select-none">
+              Know
             </button>
           </div>
         </div>
@@ -72,7 +94,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useGameStore } from '../stores/game'
 import { useSettingsStore } from '../stores/settings'
@@ -84,12 +106,31 @@ const settingsStore = useSettingsStore()
 const wordsStore = useWordsStore()
 const groupsStore = useGroupsStore()
 
+const isRevealed = ref(false)
+watch(() => gameStore.renderKey, () => { isRevealed.value = false })
+
 // Computed property to show native or foreign word based on settings
 const displayWord = computed(() => {
   if (!gameStore.currentWord) return ''
   return settingsStore.settings.direction === 'native_to_foreign' 
     ? gameStore.currentWord.translate 
     : gameStore.currentWord.word
+})
+
+const wordFontClass = computed(() => {
+  const len = displayWord.value.length
+  if (len <= 8) return 'text-4xl'
+  if (len <= 13) return 'text-3xl'
+  if (len <= 18) return 'text-2xl'
+  if (len <= 24) return 'text-xl'
+  return 'text-lg'
+})
+
+const translateWord = computed(() => {
+  if (!gameStore.currentWord) return ''
+  return settingsStore.settings.direction === 'native_to_foreign'
+    ? gameStore.currentWord.word
+    : gameStore.currentWord.translate
 })
 
 const currentGroupName = computed(() => {
@@ -120,6 +161,7 @@ const closeWindow = async () => {
 }
 
 const handleKeydown = async (e: KeyboardEvent) => {
+  if (e.key === ' ') { isRevealed.value = true; return }
   if (e.key === 'ArrowLeft') await handleDontKnow()
   if (e.key === 'ArrowRight') await handleKnow()
   if (e.key === 'Escape') await closeWindow()
@@ -171,5 +213,12 @@ onUnmounted(() => {
   opacity: 0;
 }
 
-/* Base styles for Tauri drag region support - we added it via inline attributes */
+.hint-fade-enter-active,
+.hint-fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.hint-fade-enter-from,
+.hint-fade-leave-to {
+  opacity: 0;
+}
 </style>

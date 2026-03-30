@@ -29,10 +29,12 @@
             <!-- Normal View -->
             <template v-if="editingId !== item.id">
               <td class="px-6 py-4 cursor-pointer" @click="startEdit(item)">
-                <div class="text-sm font-medium text-gray-900">{{ item.word }}</div>
+                <div class="text-sm font-medium text-gray-900 w-65 truncate">
+                  {{ item.word }}
+                </div>
               </td>
               <td class="px-6 py-4 cursor-pointer" @click="startEdit(item)">
-                <div class="text-sm text-gray-600">{{ item.translate }}</div>
+                <div class="text-sm text-gray-600 w-65 truncate">{{ item.translate }}</div>
               </td>
               <td class="px-6 py-4 cursor-pointer" @click="startEdit(item)">
                 <div class="text-sm text-gray-500 italic">{{ getGroupName(item.group_id) }}</div>

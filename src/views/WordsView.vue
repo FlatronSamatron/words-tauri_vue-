@@ -5,8 +5,21 @@
         <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Words Library</h1>
         <p class="text-sm text-gray-500 mt-1">Manage and track your vocabulary</p>
       </div>
-      <div class="text-sm font-medium bg-white px-3 py-1.5 rounded-lg shadow-sm border border-gray-100 text-gray-600">
-        Filtered words: <span class="font-bold text-gray-900 ml-1">{{ filteredWords.length }}</span>
+      <div class="flex items-center gap-3">
+        <div class="relative">
+          <svg class="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+          </svg>
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Search..."
+            class="pl-8 pr-3 py-1.5 text-sm rounded-lg border border-gray-200 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-300 w-44 text-gray-700 placeholder-gray-400 transition"
+          >
+        </div>
+        <div class="text-sm font-medium bg-white px-3 py-1.5 rounded-lg shadow-sm border border-gray-100 text-gray-600 whitespace-nowrap">
+          Filtered: <span class="font-bold text-gray-900 ml-1">{{ filteredWords.length }}</span>
+        </div>
       </div>
     </div>
 
@@ -73,11 +86,16 @@ const groupsStore = useGroupsStore()
 const settingsStore = useSettingsStore()
 
 const filterGroupId = ref<string>('all')
+const searchQuery = ref('')
 
 const filteredWords = computed(() => {
-  if (filterGroupId.value === 'all') return wordsStore.words
-  const id = parseInt(filterGroupId.value)
-  return wordsStore.words.filter(w => w.group_id === id)
+  let words = filterGroupId.value === 'all'
+    ? wordsStore.words
+    : wordsStore.words.filter(w => w.group_id === parseInt(filterGroupId.value))
+
+  const q = searchQuery.value.trim().toLowerCase()
+  if (q) words = words.filter(w => w.word.toLowerCase().includes(q) || w.translate.toLowerCase().includes(q))
+  return words
 })
 
 const masterCount = computed(() => {
