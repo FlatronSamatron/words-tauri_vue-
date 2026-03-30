@@ -3,3 +3,7 @@
 html, body, #app {
   background: transparent !important;
 }
+
+button {
+  cursor: pointer;
+}

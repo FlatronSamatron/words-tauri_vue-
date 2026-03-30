@@ -91,14 +91,10 @@
                 />
               </td>
               <td class="px-4 py-2 w-[15%]">
-                <select 
+                <BaseSelect 
                   v-model="editForm.groupId"
-                  class="w-full px-2 py-1.5 text-sm border-2 border-indigo-200 bg-indigo-50/30 rounded-md focus:outline-none focus:border-indigo-500 focus:ring-0"
-                >
-                  <option v-for="group in groupsStore.groups" :key="group.id" :value="group.id">
-                    {{ group.name }}
-                  </option>
-                </select>
+                  :options="groupsStore.groups"
+                />
               </td>
               <td class="px-6 py-4">
                 <div class="text-sm text-gray-500 font-mono">{{ item.correct }} / {{ item.total }}</div>
@@ -145,6 +141,7 @@
 import { ref, computed, nextTick } from 'vue'
 import { useWordsStore } from '../stores/words'
 import { useGroupsStore } from '../stores/groups'
+import BaseSelect from './BaseSelect.vue'
 import type { Word } from '../types'
 
 const props = defineProps<{

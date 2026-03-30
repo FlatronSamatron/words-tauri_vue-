@@ -42,7 +42,7 @@
               <input type="radio" 
                      v-model="form.direction" 
                      value="native_to_foreign" 
-                     class="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500" />
+                     class="w-5 h-5 text-indigo-600 border-gray-300 focus:ring-indigo-500" />
               <div class="ml-3">
                 <span class="block text-sm font-medium" :class="form.direction === 'native_to_foreign' ? 'text-indigo-900' : 'text-gray-900'">
                   Native → Foreign
@@ -56,7 +56,7 @@
               <input type="radio" 
                      v-model="form.direction" 
                      value="foreign_to_native" 
-                     class="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500" />
+                     class="w-5 h-5 text-indigo-600 border-gray-300 focus:ring-indigo-500" />
               <div class="ml-3">
                 <span class="block text-sm font-medium" :class="form.direction === 'foreign_to_native' ? 'text-indigo-900' : 'text-gray-900'">
                   Foreign → Native
@@ -75,15 +75,10 @@
             Active Study Group
           </label>
           <p class="text-xs text-gray-500 mb-3">Only words from this group will be shown in the learning popup.</p>
-          <select 
+          <BaseSelect 
             v-model="form.active_group_id"
-            class="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white text-gray-900 transition-colors"
-          >
-            <option value="all">All Groups</option>
-            <option v-for="group in groupsStore.groups" :key="group.id" :value="group.id.toString()">
-              {{ group.name }} ({{ group.word_count }} words)
-            </option>
-          </select>
+            :options="groupOptions"
+          />
         </div>
 
         <hr class="border-gray-100" />
@@ -242,6 +237,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { useSettingsStore } from '../stores/settings'
 import { useGroupsStore } from '../stores/groups'
 import { useWordsStore } from '../stores/words'
+import BaseSelect from '../components/BaseSelect.vue'
 
 const settingsStore = useSettingsStore()
 const groupsStore = useGroupsStore()
@@ -251,6 +247,14 @@ const form = reactive({
   interval_minutes: 5,
   direction: 'native_to_foreign' as 'native_to_foreign' | 'foreign_to_native',
   active_group_id: 'all'
+})
+
+const groupOptions = computed(() => {
+  const options = [{ id: 'all', name: 'All Groups' }]
+  groupsStore.groups.forEach(g => {
+    options.push({ id: g.id.toString(), name: `${g.name} (${g.word_count} words)` })
+  })
+  return options
 })
 
 const isSaving = ref(false)

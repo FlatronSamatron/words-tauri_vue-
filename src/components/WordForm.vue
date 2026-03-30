@@ -35,14 +35,11 @@
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1.5">Group</label>
-        <select 
+        <BaseSelect 
           v-model="selectedGroupId"
-          class="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all duration-200"
-        >
-          <option v-for="group in groupsStore.groups" :key="group.id" :value="group.id">
-            {{ group.name }}
-          </option>
-        </select>
+          :options="groupsStore.groups"
+          placeholder="Select Group"
+        />
       </div>
 
       <button 
@@ -62,6 +59,7 @@ import { ref, onMounted, watch } from 'vue'
 import { useWordsStore } from '../stores/words'
 import { useGroupsStore } from '../stores/groups'
 import { useSettingsStore } from '../stores/settings'
+import BaseSelect from './BaseSelect.vue'
 
 const wordsStore = useWordsStore()
 const groupsStore = useGroupsStore()
