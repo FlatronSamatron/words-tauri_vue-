@@ -117,15 +117,6 @@ const displayWord = computed(() => {
     : gameStore.currentWord.word
 })
 
-const wordFontClass = computed(() => {
-  const len = displayWord.value.length
-  if (len <= 8) return 'text-4xl'
-  if (len <= 13) return 'text-3xl'
-  if (len <= 18) return 'text-2xl'
-  if (len <= 24) return 'text-xl'
-  return 'text-lg'
-})
-
 const translateWord = computed(() => {
   if (!gameStore.currentWord) return ''
   return settingsStore.settings.direction === 'native_to_foreign'
