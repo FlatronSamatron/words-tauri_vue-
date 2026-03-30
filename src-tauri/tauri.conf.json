@@ -23,6 +23,9 @@
         "width": 320,
         "height": 280,
         "decorations": false,
+        "transparent": true,
+        "backgroundColor": [0, 0, 0, 0],
+        "center": true,
         "alwaysOnTop": true,
         "visible": false,
         "acceptFirstMouse": true
@@ -30,7 +33,8 @@
     ],
     "security": {
       "csp": null
-    }
+    },
+    "macOSPrivateApi": true
   },
   "bundle": {
     "active": true,

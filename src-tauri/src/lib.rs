@@ -3,12 +3,11 @@ use tauri::{
     tray::{MouseButton, TrayIconBuilder, TrayIconEvent},
     Manager, WindowEvent,
 };
-use std::sync::atomic::{AtomicI64, AtomicBool, Ordering};
+use std::sync::atomic::{AtomicI64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 struct GamePopupState {
     last_hidden: AtomicI64,
-    has_been_positioned: AtomicBool,
 }
 
 pub struct TrayTimerState {
@@ -28,7 +27,6 @@ pub fn run() {
 
             app.manage(GamePopupState {
                 last_hidden: AtomicI64::new(0),
-                has_been_positioned: AtomicBool::new(false),
             });
 
             use tauri::Listener;
@@ -137,25 +135,24 @@ pub fn run() {
                         }
 
                         if let Some(window) = app_handle.get_webview_window("game") {
-                            if !state.has_been_positioned.load(Ordering::SeqCst) {
-                                // strictly position under the icon, independent of cursor
-                                let (icon_x, icon_y) = match rect.position {
-                                    tauri::Position::Physical(p) => (p.x as f64, p.y as f64),
-                                    tauri::Position::Logical(p) => (p.x, p.y),
-                                };
-                                let (icon_w, icon_h) = match rect.size {
-                                    tauri::Size::Physical(s) => (s.width as f64, s.height as f64),
-                                    tauri::Size::Logical(s) => (s.width, s.height),
-                                };
+                            // Always position under the tray icon, centered horizontally
+                            let (icon_x, icon_y) = match rect.position {
+                                tauri::Position::Physical(p) => (p.x as f64, p.y as f64),
+                                tauri::Position::Logical(p) => (p.x, p.y),
+                            };
+                            let (icon_w, icon_h) = match rect.size {
+                                tauri::Size::Physical(s) => (s.width as f64, s.height as f64),
+                                tauri::Size::Logical(s) => (s.width, s.height),
+                            };
 
-                                let icon_center_x = icon_x + (icon_w / 2.0);
-                                
-                                let _ = window.set_position(tauri::Position::Physical(tauri::PhysicalPosition {
-                                    x: (icon_center_x - 160.0) as i32, // 320 / 2 = 160
-                                    y: (icon_y + icon_h) as i32, // right under the icon
-                                }));
-                                state.has_been_positioned.store(true, Ordering::SeqCst);
-                            }
+                            let icon_center_x = icon_x + (icon_w / 2.0);
+                            let scale = window.scale_factor().unwrap_or(1.0);
+                            let win_half_width = (320.0 * scale) / 2.0;
+
+                            let _ = window.set_position(tauri::Position::Physical(tauri::PhysicalPosition {
+                                x: (icon_center_x - win_half_width) as i32,
+                                y: (icon_y + icon_h) as i32, // right under the icon
+                            }));
                             let _ = window.show();
                             let _ = window.set_focus();
                         }
