@@ -84,8 +84,8 @@
                 ? 'Add words in the main window to start learning.' 
                 : 'Add words to this group or change active group in settings.' }}
           </p>
-          <button @click="closeWindow" class="mt-4 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-white text-xs rounded-lg transition-colors border border-gray-700">
-            Close
+          <button @click="openMainWindow" class="mt-4 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs rounded-lg transition-colors font-medium">
+            Add words
           </button>
         </div>
       </main>
@@ -149,6 +149,10 @@ const handleDontKnow = async () => {
 
 const closeWindow = async () => {
   await invoke('close_game_window')
+}
+
+const openMainWindow = async () => {
+  await invoke('open_main_window')
 }
 
 const handleKeydown = async (e: KeyboardEvent) => {

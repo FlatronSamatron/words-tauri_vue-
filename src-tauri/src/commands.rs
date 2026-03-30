@@ -316,6 +316,15 @@ pub fn delete_group(app_handle: AppHandle, id: i64) -> Result<bool, String> {
 }
 
 #[tauri::command]
+pub fn reset_all_data(app_handle: AppHandle) -> Result<(), String> {
+    let conn = get_connection(&app_handle)?;
+    conn.execute("DELETE FROM words", []).map_err(|e| e.to_string())?;
+    conn.execute("DELETE FROM groups WHERE id != 1", []).map_err(|e| e.to_string())?;
+    conn.execute("UPDATE groups SET name = 'Default' WHERE id = 1", []).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
 pub fn log_test(msg: String) {
     println!("TEST_JS_OUTPUT: {}", msg);
 }
@@ -331,6 +340,18 @@ pub fn open_game_window(app_handle: AppHandle) -> Result<(), String> {
 
 #[tauri::command]
 pub fn close_game_window(app_handle: AppHandle) -> Result<(), String> {
+    if let Some(window) = app_handle.get_webview_window("game") {
+        window.hide().map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn open_main_window(app_handle: AppHandle) -> Result<(), String> {
+    if let Some(window) = app_handle.get_webview_window("main") {
+        window.show().map_err(|e| e.to_string())?;
+        window.set_focus().map_err(|e| e.to_string())?;
+    }
     if let Some(window) = app_handle.get_webview_window("game") {
         window.hide().map_err(|e| e.to_string())?;
     }

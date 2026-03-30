@@ -194,8 +194,10 @@ pub fn run() {
             commands::rename_group,
             commands::delete_group,
             commands::log_test,
+            commands::reset_all_data,
             commands::open_game_window,
             commands::close_game_window,
+            commands::open_main_window,
             commands::set_tray_active,
             commands::set_tray_normal,
             commands::update_timer_interval
